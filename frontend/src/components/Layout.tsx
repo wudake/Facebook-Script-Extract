@@ -1,5 +1,6 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
-import { ClipboardList, PlayCircle, Settings, Video, FileText } from 'lucide-react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { ClipboardList, PlayCircle, Settings, Video, FileText, LogOut, UserCircle2 } from 'lucide-react'
+import { logout, getCurrentUser } from '../utils/auth'
 
 const navItems = [
   { path: '/', label: '新建任务', icon: PlayCircle },
@@ -10,6 +11,13 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const user = getCurrentUser()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,6 +47,22 @@ export default function Layout() {
                 </Link>
               )
             })}
+            <div className="ml-2 pl-2 border-l border-gray-200 flex items-center gap-2">
+              {user && (
+                <span className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
+                  <UserCircle2 className="w-4 h-4" />
+                  {user}
+                </span>
+              )}
+              <button
+                onClick={handleLogout}
+                title="退出登录"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">退出</span>
+              </button>
+            </div>
           </nav>
         </div>
       </header>
