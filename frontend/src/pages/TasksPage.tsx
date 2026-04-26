@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, RefreshCw, Clock, Download, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Loader2, RefreshCw, Clock, Download, Film, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { tasksApi, type TaskInfo } from '../api/client'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -123,15 +123,27 @@ export default function TasksPage() {
                       >
                         详情
                       </Link>
-                      {task.status === 'completed' && task.result_url && (
-                        <a
-                          href={tasksApi.download(task.id)}
-                          target="_blank"
-                          className="inline-flex items-center gap-1 text-green-600 hover:text-green-700 text-xs font-medium"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          下载
-                        </a>
+                      {task.status === 'completed' && (
+                        <>
+                          <a
+                            href={tasksApi.downloadVideo(task.id)}
+                            target="_blank"
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs font-medium"
+                          >
+                            <Film className="w-3.5 h-3.5" />
+                            视频
+                          </a>
+                          {task.result_url && (
+                            <a
+                              href={tasksApi.download(task.id)}
+                              target="_blank"
+                              className="inline-flex items-center gap-1 text-green-600 hover:text-green-700 text-xs font-medium"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              字幕
+                            </a>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>

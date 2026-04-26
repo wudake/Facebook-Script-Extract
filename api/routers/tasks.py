@@ -193,6 +193,7 @@ def get_task_result(
         "segments": None,
         "full_text": None,
         "output_file": str(output_path) if output_path.exists() else None,
+        "video_url": meta.get("video_url") or None,
         "error_message": meta.get("error_message") or None,
     }
 
@@ -205,3 +206,27 @@ def get_task_result(
             pass
 
     return TaskResult(**result_data)
+
+
+@router.get("/{task_id}/download-video")
+def download_video(
+    task_id: str,
+    api_key: str = Depends(verify_api_key),
+):
+    meta = _get_task_meta(task_id)
+    if not meta:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    if meta.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="任务尚未完成")
+
+    video_path = Path(settings.output_dir) / f"{task_id}.mp4"
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="视频文件已删除")
+
+    return FileResponse(
+        path=str(video_path),
+        media_type="video/mp4",
+        filename=f"video_{task_id}.mp4",
+    )

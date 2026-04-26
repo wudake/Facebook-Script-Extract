@@ -5,6 +5,7 @@ const FACEBOOK_PATTERNS = [
   /^https?:\/\/fb\.watch\/[\w-]+/,
   /^https?:\/\/(?:www\.)?facebook\.com\/[^/]+\/videos\/[\w-]+/,
   /^https?:\/\/(?:www\.)?facebook\.com\/groups\/[^/]+\/posts\/[\w-]+/,
+  /^https?:\/\/(?:www\.)?facebook\.com\/ads\/library\/\?id=[\d]+/,
 ]
 
 const YOUTUBE_PATTERNS = [

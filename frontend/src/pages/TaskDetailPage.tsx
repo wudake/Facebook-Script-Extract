@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2, Copy, Check, Film } from 'lucide-react'
 import { tasksApi, type TaskInfo, type TaskResult } from '../api/client'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -145,20 +145,32 @@ export default function TaskDetailPage() {
         )}
 
         {task.status === 'completed' && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-green-500" />
             <span className="text-green-700 text-sm font-medium">处理完成</span>
             {result?.duration && (
               <span className="text-gray-500 text-sm">时长: {result.duration.toFixed(1)}s</span>
             )}
-            <a
-              href={tasksApi.download(task.id)}
-              target="_blank"
-              className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              下载结果
-            </a>
+            <div className="ml-auto flex items-center gap-2">
+              {result?.video_url && (
+                <a
+                  href={tasksApi.downloadVideo(task.id)}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <Film className="w-4 h-4" />
+                  下载视频
+                </a>
+              )}
+              <a
+                href={tasksApi.download(task.id)}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                下载结果
+              </a>
+            </div>
           </div>
         )}
 

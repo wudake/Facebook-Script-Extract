@@ -82,10 +82,10 @@ def _init_task_meta(task_id: str, url: str, params: dict):
         "id": task_id,
         "url": url,
         "status": "pending",
-        "language": params.get("language", "auto"),
+        "language": params.get("language", "en"),
         "output_format": params.get("output_format", "json"),
         "use_local": str(params.get("use_local", True)),
-        "model_size": params.get("model_size", "small"),
+        "model_size": params.get("model_size", "tiny"),
         "created_at": now,
         "progress": "0",
     })
@@ -130,7 +130,7 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
 
         if params.get("use_local", True):
             transcriber = _get_local_transcriber(
-                model_size=params.get("model_size", "small"),
+                model_size=params.get("model_size", "tiny"),
                 device=params.get("device", "cpu"),
                 language=language,
             )
@@ -138,7 +138,7 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
             api_key = settings.openai_api_key
             if not api_key:
                 raise ValueError("未配置 OPENAI_API_KEY，无法使用 API 模式")
-            transcriber = Transcriber(api_key=api_key, language=params.get("language", "auto"))
+            transcriber = Transcriber(api_key=api_key, language=params.get("language", "en"))
 
         result = transcriber.transcribe(audio_path)
 
@@ -149,6 +149,11 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
         output_path = output_dir / f"{task_id}.{params.get('output_format', 'json')}"
         formatter_save(result, str(output_path), fmt=params.get("output_format", "json"))
 
+        # 复制视频到输出目录供下载
+        video_output = output_dir / f"{task_id}.mp4"
+        import shutil
+        shutil.copy2(video_path, video_output)
+
         # 更新元数据
         _update_task_meta(
             task_id,
@@ -157,8 +162,9 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
             language=result.get("language", ""),
             duration=str(result.get("duration", 0)),
             result_url=f"/tasks/{task_id}/download",
-            completed_at=datetime.now(),
+            video_url=f"/tasks/{task_id}/download-video",
             updated_at=datetime.now(),
+            completed_at=datetime.now(),
         )
 
         # 清理临时文件

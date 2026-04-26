@@ -7,10 +7,10 @@ import { isValidVideoUrl } from '../utils/validation'
 export default function SubmitPage() {
   const navigate = useNavigate()
   const [url, setUrl] = useState('')
-  const [language, setLanguage] = useState('auto')
+  const [language, setLanguage] = useState('en')
   const [format, setFormat] = useState<'json' | 'txt' | 'srt' | 'vtt'>('json')
   const [useLocal, setUseLocal] = useState(true)
-  const [modelSize, setModelSize] = useState<'tiny' | 'base' | 'small' | 'medium' | 'large-v3'>('small')
+  const [modelSize, setModelSize] = useState<'tiny' | 'base' | 'small' | 'medium' | 'large-v3'>('tiny')
   const [device, setDevice] = useState<'cpu' | 'cuda'>('cpu')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -26,7 +26,7 @@ export default function SubmitPage() {
     setLoading(true)
 
     if (!isValidVideoUrl(url)) {
-      setError('无效的链接，仅支持 Facebook 和 YouTube 视频')
+      setError('无效的链接，仅支持 Facebook 视频、YouTube 视频和 Facebook Ads Library 链接')
       setLoading(false)
       isSubmittingRef.current = false
       return
@@ -62,14 +62,14 @@ export default function SubmitPage() {
         {/* URL */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            视频链接（Facebook / YouTube）
+            视频链接（Facebook / YouTube / Ads Library）
           </label>
           <div className="relative">
             <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="url"
               required
-              placeholder="https://www.facebook.com/watch?v=... 或 https://www.youtube.com/watch?v=..."
+              placeholder="Facebook 视频、YouTube 视频，或 facebook.com/ads/library/?id=..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"

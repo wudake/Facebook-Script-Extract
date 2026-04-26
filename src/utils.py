@@ -9,6 +9,7 @@ FACEBOOK_URL_PATTERNS = [
     r"https?://fb\.watch/[\w-]+",
     r"https?://(?:www\.)?facebook\.com/[^/]+/videos/[\w-]+",
     r"https?://(?:www\.)?facebook\.com/groups/[^/]+/posts/[\w-]+",
+    r"https?://(?:www\.)?facebook\.com/ads/library/\?id=[\d]+",
 ]
 
 YOUTUBE_URL_PATTERNS = [

@@ -58,6 +58,7 @@ export interface TaskResult {
   }> | null
   full_text: string | null
   output_file: string | null
+  video_url: string | null
   error_message: string | null
 }
 
@@ -69,6 +70,10 @@ export const tasksApi = {
   download: (id: string) => {
     const base = API_BASE || window.location.origin
     return `${base}/api/tasks/${id}/download?api_key=${getApiKey()}`
+  },
+  downloadVideo: (id: string) => {
+    const base = API_BASE || window.location.origin
+    return `${base}/api/tasks/${id}/download-video?api_key=${getApiKey()}`
   },
 }
 

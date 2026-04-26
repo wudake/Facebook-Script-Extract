@@ -17,9 +17,9 @@ class Settings(BaseSettings):
     celery_result_backend: str = "redis://localhost:6379/0"
 
     # 模型默认参数
-    default_model_size: str = "small"
+    default_model_size: str = "tiny"
     default_device: str = "cpu"
-    default_language: str = "auto"
+    default_language: str = "en"
 
     # 路径
     temp_dir: str = "./temp"
