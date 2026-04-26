@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2, RefreshCw, FileText, ExternalLink, Clock } from 'lucide-react'
+import { Loader2, RefreshCw, FileText, ExternalLink, Clock, Copy, Check } from 'lucide-react'
 import { tasksApi, type TaskInfo, type TaskResult } from '../api/client'
 
 interface ScriptItem {
@@ -11,6 +11,36 @@ export default function CompletedScriptsPage() {
   const [items, setItems] = useState<ScriptItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [copiedIds, setCopiedIds] = useState<Set<string>>(new Set())
+
+  const handleCopy = async (taskId: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedIds((prev) => new Set(prev).add(taskId))
+      setTimeout(() => {
+        setCopiedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(taskId)
+          return next
+        })
+      }, 2000)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopiedIds((prev) => new Set(prev).add(taskId))
+      setTimeout(() => {
+        setCopiedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(taskId)
+          return next
+        })
+      }, 2000)
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -113,9 +143,23 @@ export default function CompletedScriptsPage() {
             </div>
             <div className="px-5 py-4">
               {item.result?.full_text ? (
-                <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto scrollbar-thin">
-                  {item.result.full_text}
-                </div>
+                (() => {
+                  const text = item.result.full_text
+                  return (
+                    <div className="relative">
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto scrollbar-thin pr-20">
+                        {text}
+                      </div>
+                      <button
+                        onClick={() => handleCopy(item.task.id, text)}
+                        className="absolute top-0 right-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors bg-white shadow-sm"
+                      >
+                        {copiedIds.has(item.task.id) ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+                        {copiedIds.has(item.task.id) ? '已复制' : '复制'}
+                      </button>
+                    </div>
+                  )
+                })()
               ) : (
                 <div className="text-sm text-gray-400 italic">暂无脚本内容</div>
               )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2, Copy, Check } from 'lucide-react'
 import { tasksApi, type TaskInfo, type TaskResult } from '../api/client'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -19,6 +19,25 @@ export default function TaskDetailPage() {
   const [result, setResult] = useState<TaskResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   const fetchData = async () => {
     if (!taskId) return
@@ -146,7 +165,16 @@ export default function TaskDetailPage() {
         {/* 预览 */}
         {result?.full_text && (
           <div className="mt-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">文本预览</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-700">文本预览</h3>
+              <button
+                onClick={() => handleCopy(result.full_text!)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+                {copied ? '已复制' : '复制全文'}
+              </button>
+            </div>
             <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 max-h-96 overflow-y-auto scrollbar-thin whitespace-pre-wrap">
               {result.full_text}
             </div>
