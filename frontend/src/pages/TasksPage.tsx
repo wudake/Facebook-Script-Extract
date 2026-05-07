@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, RefreshCw, Clock, Download, Film, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Loader2, RefreshCw, Clock, Download, Film, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 import { tasksApi, type TaskInfo } from '../api/client'
 import { useWebSocket } from '../hooks/useWebSocket'
 
@@ -49,18 +49,48 @@ export default function TasksPage() {
     }
   })
 
+  const handleDelete = async (taskId: string) => {
+    if (!confirm('确定要删除这个任务吗？相关文件也会被删除。')) return
+    try {
+      await tasksApi.delete(taskId)
+      setTasks((prev) => prev.filter((t) => t.id !== taskId))
+    } catch (err: any) {
+      setError(err.response?.data?.detail || '删除任务失败')
+    }
+  }
+
+  const handleClearAll = async () => {
+    if (!confirm('确定要清空所有任务吗？所有任务数据和文件都会被删除，此操作不可恢复。')) return
+    try {
+      await tasksApi.clearAll()
+      setTasks([])
+    } catch (err: any) {
+      setError(err.response?.data?.detail || '清空任务失败')
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">任务列表</h1>
-        <button
-          onClick={fetchTasks}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          刷新
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleClearAll}
+            disabled={loading || tasks.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-300 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            清空全部
+          </button>
+          <button
+            onClick={fetchTasks}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            刷新
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -145,6 +175,13 @@ export default function TasksPage() {
                           )}
                         </>
                       )}
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="inline-flex items-center gap-1 text-red-500 hover:text-red-700 text-xs font-medium"
+                        title="删除任务"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>

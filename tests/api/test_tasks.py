@@ -325,3 +325,126 @@ class TestGetTaskResult:
             assert response.status_code == 200
             data = response.json()
             assert data["segments"] is None
+
+
+class TestDeleteTask:
+    @patch("api.routers.tasks._get_task_meta")
+    @patch("api.routers.tasks.AsyncResult")
+    def test_delete_completed_task(self, mock_async_result, mock_get_meta, tmp_path, mock_redis, mock_celery_app):
+        with patch("api.routers.tasks.settings") as mock_settings:
+            mock_settings.output_dir = str(tmp_path)
+            mock_settings.api_key = API_KEY
+            mock_get_meta.return_value = {
+                "status": "completed",
+                "output_format": "json",
+            }
+
+            # 创建输出文件
+            (tmp_path / "task-123.json").write_text('{"test": true}')
+            (tmp_path / "task-123.mp4").write_text("video")
+
+            response = client.delete("/tasks/task-123", headers=HEADERS)
+
+            assert response.status_code == 204
+            mock_celery_app.control.revoke.assert_not_called()
+            mock_redis.delete.assert_called_once_with("task_meta:task-123")
+            mock_async_result.return_value.forget.assert_called_once()
+            assert not (tmp_path / "task-123.json").exists()
+            assert not (tmp_path / "task-123.mp4").exists()
+
+    @patch("api.routers.tasks._get_task_meta")
+    @patch("api.routers.tasks.AsyncResult")
+    def test_delete_active_task(self, mock_async_result, mock_get_meta, tmp_path, mock_redis, mock_celery_app):
+        with patch("api.routers.tasks.settings") as mock_settings:
+            mock_settings.output_dir = str(tmp_path)
+            mock_settings.api_key = API_KEY
+            mock_get_meta.return_value = {
+                "status": "downloading",
+                "output_format": "json",
+            }
+
+            response = client.delete("/tasks/task-123", headers=HEADERS)
+
+            assert response.status_code == 204
+            mock_celery_app.control.revoke.assert_called_once_with("task-123", terminate=True)
+            mock_redis.delete.assert_called_once_with("task_meta:task-123")
+            mock_async_result.return_value.forget.assert_called_once()
+
+    @patch("api.routers.tasks._get_task_meta")
+    def test_delete_task_not_found(self, mock_get_meta):
+        mock_get_meta.return_value = {}
+
+        response = client.delete("/tasks/nonexistent", headers=HEADERS)
+        assert response.status_code == 404
+
+    def test_delete_task_missing_api_key(self):
+        response = client.delete("/tasks/task-123")
+        assert response.status_code == 401
+
+    @patch("api.routers.tasks._get_task_meta")
+    @patch("api.routers.tasks.AsyncResult")
+    def test_delete_task_file_cleanup_error_ignored(
+        self, mock_async_result, mock_get_meta, tmp_path, mock_redis, mock_celery_app
+    ):
+        with patch("api.routers.tasks.settings") as mock_settings:
+            mock_settings.output_dir = str(tmp_path)
+            mock_settings.api_key = API_KEY
+            mock_get_meta.return_value = {
+                "status": "completed",
+                "output_format": "json",
+            }
+
+            # 创建一个目录（而非文件）来触发 unlink 失败
+            (tmp_path / "task-123.json").mkdir()
+
+            response = client.delete("/tasks/task-123", headers=HEADERS)
+
+            assert response.status_code == 204
+            mock_redis.delete.assert_called_once_with("task_meta:task-123")
+
+
+class TestClearAllTasks:
+    @patch("api.routers.tasks._get_task_meta")
+    @patch("api.routers.tasks.AsyncResult")
+    def test_clear_all_tasks(self, mock_async_result, mock_get_meta, tmp_path, mock_redis, mock_celery_app):
+        with patch("api.routers.tasks.settings") as mock_settings:
+            mock_settings.output_dir = str(tmp_path)
+            mock_settings.api_key = API_KEY
+            mock_redis.keys.return_value = ["task_meta:task-1", "task_meta:task-2"]
+
+            def side_effect(task_id):
+                if task_id == "task-1":
+                    return {"status": "completed", "output_format": "json"}
+                return {"status": "downloading", "output_format": "txt"}
+
+            mock_get_meta.side_effect = side_effect
+
+            (tmp_path / "task-1.json").write_text("{}")
+            (tmp_path / "task-2.txt").write_text("hello")
+
+            response = client.delete("/tasks", headers=HEADERS)
+
+            assert response.status_code == 204
+            assert mock_redis.delete.call_count == 2
+            mock_celery_app.control.revoke.assert_called_once_with("task-2", terminate=True)
+            assert mock_async_result.return_value.forget.call_count == 2
+            assert not (tmp_path / "task-1.json").exists()
+            assert not (tmp_path / "task-2.txt").exists()
+
+    @patch("api.routers.tasks._get_task_meta")
+    @patch("api.routers.tasks.AsyncResult")
+    def test_clear_all_empty(self, mock_async_result, mock_get_meta, tmp_path, mock_redis, mock_celery_app):
+        with patch("api.routers.tasks.settings") as mock_settings:
+            mock_settings.output_dir = str(tmp_path)
+            mock_settings.api_key = API_KEY
+            mock_redis.keys.return_value = []
+
+            response = client.delete("/tasks", headers=HEADERS)
+
+            assert response.status_code == 204
+            mock_redis.delete.assert_not_called()
+            mock_celery_app.control.revoke.assert_not_called()
+
+    def test_clear_all_missing_api_key(self):
+        response = client.delete("/tasks")
+        assert response.status_code == 401

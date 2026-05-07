@@ -67,6 +67,8 @@ export const tasksApi = {
   list: (skip = 0, limit = 20) => api.get<TaskInfo[]>(`/api/tasks?skip=${skip}&limit=${limit}`),
   get: (id: string) => api.get<TaskInfo>(`/api/tasks/${id}`),
   getResult: (id: string) => api.get<TaskResult>(`/api/tasks/${id}/result`),
+  delete: (id: string) => api.delete(`/api/tasks/${id}`),
+  clearAll: () => api.delete('/api/tasks'),
   download: (id: string) => {
     const base = API_BASE || window.location.origin
     return `${base}/api/tasks/${id}/download?api_key=${getApiKey()}`

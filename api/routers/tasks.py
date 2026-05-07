@@ -230,3 +230,73 @@ def download_video(
         media_type="video/mp4",
         filename=f"video_{task_id}.mp4",
     )
+
+
+def _delete_task_files(task_id: str):
+    """删除任务关联的所有输出文件"""
+    output_dir = Path(settings.output_dir)
+    patterns = [
+        f"{task_id}.json",
+        f"{task_id}.txt",
+        f"{task_id}.srt",
+        f"{task_id}.vtt",
+        f"{task_id}.mp4",
+        f"{task_id}.error.log",
+    ]
+    for pattern in patterns:
+        f = output_dir / pattern
+        if f.exists():
+            try:
+                f.unlink()
+            except OSError:
+                pass
+
+
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(
+    task_id: str,
+    api_key: str = Depends(verify_api_key),
+):
+    meta = _get_task_meta(task_id)
+    if not meta:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    # 如果任务还在运行，撤销它
+    if meta.get("status") in ACTIVE_STATUSES:
+        celery_app.control.revoke(task_id, terminate=True)
+
+    # 删除 Redis 元数据
+    redis_client.delete(f"task_meta:{task_id}")
+
+    # 清理 Celery 结果
+    AsyncResult(task_id, app=celery_app).forget()
+
+    # 删除输出文件
+    _delete_task_files(task_id)
+
+    return None
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+def clear_all_tasks(
+    api_key: str = Depends(verify_api_key),
+):
+    keys = redis_client.keys("task_meta:*")
+    for key in keys:
+        task_id = key.replace("task_meta:", "")
+        meta = _get_task_meta(task_id)
+
+        # 撤销运行中的任务
+        if meta.get("status") in ACTIVE_STATUSES:
+            celery_app.control.revoke(task_id, terminate=True)
+
+        # 删除 Redis 元数据
+        redis_client.delete(key)
+
+        # 清理 Celery 结果
+        AsyncResult(task_id, app=celery_app).forget()
+
+        # 删除输出文件
+        _delete_task_files(task_id)
+
+    return None

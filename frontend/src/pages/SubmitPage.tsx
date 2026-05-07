@@ -53,10 +53,14 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
         <Mic className="w-7 h-7 text-primary-600" />
         新建转写任务
       </h1>
+
+      <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+        粘贴 Facebook、YouTube 或 Facebook Ads Library 视频链接，系统自动下载视频、提取音频并完成语音识别，输出 TXT / SRT / VTT / JSON 格式的文字脚本。支持本地 Whisper 模型（免费）或 OpenAI API（付费）两种转写引擎。
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         {/* URL */}
